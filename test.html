@@ -135,6 +135,7 @@
 </div>
 
 <script>
+    const API = 'https://ammoniteid.onrender.com'
     let selectedFiles = []
 
     // Show image previews when files selected
@@ -220,7 +221,7 @@
 
         try {
             const response = await fetch(
-                'https://ammoniteid.onrender.com/identify',
+                API + '/identify',
                 {
                     method: 'POST',
                     body:   formData,
