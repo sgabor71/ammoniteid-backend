@@ -1,0 +1,112 @@
+{
+  "model_version": "v1",
+  "val_accuracy": 0.709,
+  "num_classes": 16,
+  "image_size": 224,
+  "class_indices": {
+    "Amaltheus": 0,
+    "Androgynoceras": 1,
+    "Arnioceras": 2,
+    "Belemnite Fossil": 3,
+    "Bivalve": 4,
+    "Catacoeloceras": 5,
+    "Dactylioceras": 6,
+    "Devils toenail": 7,
+    "Eleganticeras": 8,
+    "Gagaticeras": 9,
+    "Grammoceras": 10,
+    "Harpoceras": 11,
+    "Hildoceras": 12,
+    "Not_Ammonite": 13,
+    "Peronoceras": 14,
+    "Pseudolioceras": 15
+  },
+  "index_to_class": {
+    "0": "Amaltheus",
+    "1": "Androgynoceras",
+    "2": "Arnioceras",
+    "3": "Belemnite Fossil",
+    "4": "Bivalve",
+    "5": "Catacoeloceras",
+    "6": "Dactylioceras",
+    "7": "Devils toenail",
+    "8": "Eleganticeras",
+    "9": "Gagaticeras",
+    "10": "Grammoceras",
+    "11": "Harpoceras",
+    "12": "Hildoceras",
+    "13": "Not_Ammonite",
+    "14": "Peronoceras",
+    "15": "Pseudolioceras"
+  },
+  "genus_to_family": {
+    "Amaltheus": "Amaltheidae",
+    "Androgynoceras": "Androgynoceratidae",
+    "Arnioceras": "Schiloceratidae",
+    "Catacoeloceras": "Dactylioceratidae",
+    "Dactylioceras": "Dactylioceratidae",
+    "Eleganticeras": "Eleganticeratidae",
+    "Gagaticeras": "Dactylioceratidae",
+    "Grammoceras": "Hildoceratidae",
+    "Harpoceras": "Hildoceratidae",
+    "Hildoceras": "Hildoceratidae",
+    "Peronoceras": "Dactylioceratidae",
+    "Pseudolioceras": "Hildoceratidae"
+  },
+  "family_to_genera": {
+    "Amaltheidae": [
+      "Amaltheus"
+    ],
+    "Androgynoceratidae": [
+      "Androgynoceras"
+    ],
+    "Schiloceratidae": [
+      "Arnioceras"
+    ],
+    "Dactylioceratidae": [
+      "Catacoeloceras",
+      "Dactylioceras",
+      "Gagaticeras",
+      "Peronoceras"
+    ],
+    "Eleganticeratidae": [
+      "Eleganticeras"
+    ],
+    "Hildoceratidae": [
+      "Grammoceras",
+      "Harpoceras",
+      "Hildoceras",
+      "Pseudolioceras"
+    ]
+  },
+  "non_ammonite_map": {
+    "Not_Ammonite": "Not_Fossil",
+    "Belemnite Fossil": "Other_Fossil",
+    "Bivalve": "Other_Fossil",
+    "Devils toenail": "Other_Fossil"
+  },
+  "non_ammonite_folders": [
+    "Not_Ammonite",
+    "Belemnite Fossil",
+    "Bivalve",
+    "Devils toenail"
+  ],
+  "thresholds": {
+    "family_likely": 0.75,
+    "family_possible": 0.55,
+    "genus_best_match": 0.6,
+    "genus_possible": 0.3
+  },
+  "output_categories": {
+    "ammonite_families": [
+      "Amaltheidae",
+      "Androgynoceratidae",
+      "Schiloceratidae",
+      "Dactylioceratidae",
+      "Eleganticeratidae",
+      "Hildoceratidae"
+    ],
+    "not_fossil": "Not_Fossil",
+    "other_fossil": "Other_Fossil"
+  }
+}

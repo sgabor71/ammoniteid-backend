@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>AmmoniteID — Test Interface</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 40px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        h1 {
+            color: #333;
+        }
+        .box {
+            background: white;
+            padding: 24px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+        input[type="file"] {
+            margin: 12px 0;
+            display: block;
+        }
+        button {
+            background: #2d6a4f;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            font-size: 16px;
+            cursor: pointer;
+            margin-top: 8px;
+        }
+        button:hover {
+            background: #1b4332;
+        }
+        button:disabled {
+            background: #aaa;
+            cursor: not-allowed;
+        }
+        #result {
+            white-space: pre-wrap;
+            font-family: monospace;
+            font-size: 15px;
+            line-height: 1.6;
+            background: #f8f8f8;
+            padding: 20px;
+            border-radius: 6px;
+            border: 1px solid #ddd;
+        }
+        #status {
+            color: #666;
+            font-style: italic;
+            margin: 8px 0;
+        }
+        .preview {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+            margin: 12px 0;
+        }
+        .preview-item {
+            position: relative;
+        }
+        .preview img {
+            width: 150px;
+            height: 150px;
+            object-fit: cover;
+            border-radius: 4px;
+            border: 1px solid #ddd;
+        }
+        .remove-photo {
+            position: absolute;
+            top: 4px;
+            right: 4px;
+            background: #ef4444;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            cursor: pointer;
+            font-size: 14px;
+            line-height: 1;
+            padding: 0;
+        }
+        .label {
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 6px;
+        }
+        .hint {
+            color: #666;
+            font-size: 13px;
+            margin-top: 4px;
+        }
+    </style>
+</head>
+<body>
+
+<h1>AmmoniteID — Test Interface</h1>
+
+<div class="box">
+    <div class="label">Select 1 to 3 photos of the same specimen</div>
+    <div class="hint">
+        Multiple photos from different angles improve accuracy
+    </div>
+    <input
+        type="file"
+        id="photos"
+        accept="image/jpeg,image/png"
+        multiple
+    >
+    <div class="preview" id="preview"></div>
+    <button onclick="identify()" id="btn">
+        Identify Fossil
+    </button>
+    <div id="status"></div>
+</div>
+
+<div class="box" id="result-box" style="display:none">
+    <div class="label">Result</div>
+    <div id="result"></div>
+</div>
+
+<div class="box" id="debug-box" style="display:none">
+    <div class="label">Full response (for debugging)</div>
+    <div id="debug"
+         style="font-size:12px;font-family:monospace;
+                white-space:pre-wrap;word-break:break-all">
+    </div>
+</div>
+
+<script>
+    let selectedFiles = []
+
+    // Show image previews when files selected
+    document.getElementById('photos')
+        .addEventListener('change', function(e) {
+            const files = Array.from(this.files)
+            
+            if (files.length > 3) {
+                alert('Maximum 3 photos allowed.')
+                this.value = ''
+                selectedFiles = []
+                updatePreview()
+                return
+            }
+
+            selectedFiles = files
+            updatePreview()
+        })
+
+    function updatePreview() {
+        const preview = document.getElementById('preview')
+        preview.innerHTML = ''
+
+        selectedFiles.forEach((file, index) => {
+            const reader = new FileReader()
+            reader.onload = function(e) {
+                const item = document.createElement('div')
+                item.className = 'preview-item'
+                
+                const img = document.createElement('img')
+                img.src = e.target.result
+                
+                const removeBtn = document.createElement('button')
+                removeBtn.className = 'remove-photo'
+                removeBtn.innerHTML = '×'
+                removeBtn.onclick = () => removePhoto(index)
+                
+                item.appendChild(img)
+                item.appendChild(removeBtn)
+                preview.appendChild(item)
+            }
+            reader.readAsDataURL(file)
+        })
+    }
+
+    function removePhoto(index) {
+        selectedFiles.splice(index, 1)
+        updatePreview()
+        
+        // Clear the file input and rebuild it
+        const input = document.getElementById('photos')
+        const dt = new DataTransfer()
+        selectedFiles.forEach(f => dt.items.add(f))
+        input.files = dt.files
+    }
+
+    async function identify() {
+        const input  = document.getElementById('photos')
+        const btn    = document.getElementById('btn')
+        const status = document.getElementById('status')
+
+        if (selectedFiles.length === 0) {
+            alert('Please select at least one photo.')
+            return
+        }
+
+        // Build form data
+        const formData = new FormData()
+        selectedFiles.forEach(file => {
+            formData.append('photos', file)
+        })
+
+        // Update UI
+        btn.disabled    = true
+        btn.textContent = 'Identifying...'
+        status.textContent = 
+            `Sending ${selectedFiles.length} photo${selectedFiles.length > 1 ? 's' : ''} to server...`
+
+        document.getElementById('result-box')
+            .style.display = 'none'
+        document.getElementById('debug-box')
+            .style.display = 'none'
+
+        try {
+            const response = await fetch(
+                'http://localhost:8000/identify',
+                {
+                    method: 'POST',
+                    body:   formData,
+                }
+            )
+
+            const data = await response.json()
+
+            if (!response.ok) {
+                status.textContent =
+                    'Error: ' + (data.detail || 'Unknown error')
+                return
+            }
+
+            // Show formatted result
+            document.getElementById('result').textContent =
+                data.formatted_output
+
+            document.getElementById('result-box')
+                .style.display = 'block'
+
+            // Show full debug response
+            document.getElementById('debug').textContent =
+                JSON.stringify(data, null, 2)
+
+            document.getElementById('debug-box')
+                .style.display = 'block'
+
+            status.textContent =
+                `Done. Scenario: ${data.scenario} | ` +
+                `Photos analyzed: ${data.num_photos}`
+
+        } catch (err) {
+            status.textContent =
+                'Connection error: ' + err.message
+        } finally {
+            btn.disabled    = false
+            btn.textContent = 'Identify Fossil'
+        }
+    }
+</script>
+
+</body>
+</html>
