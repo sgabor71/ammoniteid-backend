@@ -4,7 +4,6 @@
 # ============================================================
 
 import os
-import json
 from pathlib import Path
 
 # Detect if running on Render or locally
@@ -13,13 +12,9 @@ IS_RENDER = os.getenv('RENDER') is not None
 # Base directory
 BASE_DIR = Path(__file__).parent
 
-# Model file paths (same location locally and on Render)
+# Model and class info file paths
 MODEL_PATH = BASE_DIR / 'ammonite_model_v1.keras'
-CLASS_INFO_PATH = BASE_DIR / 'class_info.json'
-
-# Load class info dictionary
-with open(CLASS_INFO_PATH, 'r') as f:
-    CLASS_INFO = json.load(f)
+CLASS_INFO = BASE_DIR / 'class_info.json'  # Path to the JSON file
 
 # Storage directories - different paths for Render vs local
 if IS_RENDER:
