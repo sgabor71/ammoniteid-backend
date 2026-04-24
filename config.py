@@ -4,6 +4,7 @@
 # ============================================================
 
 import os
+import json
 from pathlib import Path
 
 # Detect if running on Render or locally
@@ -16,6 +17,10 @@ BASE_DIR = Path(__file__).parent
 MODEL_PATH = BASE_DIR / 'ammonite_model_v1.keras'
 CLASS_INFO_PATH = BASE_DIR / 'class_info.json'
 
+# Load class info dictionary
+with open(CLASS_INFO_PATH, 'r') as f:
+    CLASS_INFO = json.load(f)
+
 # Storage directories - different paths for Render vs local
 if IS_RENDER:
     UPLOAD_DIR = Path('/tmp/uploads')
@@ -26,6 +31,15 @@ else:
 
 UPLOAD_DIR.mkdir(exist_ok=True, parents=True)
 REVIEW_DIR.mkdir(exist_ok=True, parents=True)
+
+# Model settings
+IMAGE_SIZE = 224  # EfficientNet-B0 input size
+
+# Confidence thresholds
+FAMILY_LIKELY_THRESHOLD = 75
+FAMILY_POSSIBLE_THRESHOLD = 50
+GENUS_BEST_MATCH_THRESHOLD = 40
+GENUS_POSSIBLE_THRESHOLD = 25
 
 # Upload limits
 MAX_PHOTOS  = 3
