@@ -1,22 +1,25 @@
 # ============================================================
-# config.py — Backend configuration
+# config.py — Configuration constants
+# AmmoniteID v1.0
 # ============================================================
+
 import os
+from pathlib import Path
 
 # Detect if running on Render or locally
 IS_RENDER = os.getenv('RENDER') is not None
 
-from pathlib import Path
+# Base directory
+BASE_DIR = Path(__file__).parent
 
-BASE_DIR   = Path(__file__).parent
+# Model file paths (same location locally and on Render)
+MODEL_PATH = BASE_DIR / 'ammonite_model_v1.keras'
+CLASS_INFO_PATH = BASE_DIR / 'class_info.json'
 
-# On Render, use /tmp for uploads and reviews
-# (Render's filesystem is ephemeral but /tmp persists during runtime)
+# Storage directories - different paths for Render vs local
 if IS_RENDER:
     UPLOAD_DIR = Path('/tmp/uploads')
     REVIEW_DIR = Path('/tmp/review_queue')
-    # Database also goes in /tmp on Render
-    # Will be recreated on each deploy - that's fine for testing
 else:
     UPLOAD_DIR = BASE_DIR / 'uploads'
     REVIEW_DIR = BASE_DIR / 'review_queue'
@@ -24,23 +27,10 @@ else:
 UPLOAD_DIR.mkdir(exist_ok=True, parents=True)
 REVIEW_DIR.mkdir(exist_ok=True, parents=True)
 
-UPLOAD_DIR.mkdir(exist_ok=True)
-REVIEW_DIR.mkdir(exist_ok=True)
+# Upload limits
+MAX_PHOTOS  = 3
+MAX_FILE_MB = 10
 
-IMAGE_SIZE   = 224
-MAX_PHOTOS   = 3
-MAX_FILE_MB  = 10
-
-FAMILY_LIKELY_THRESHOLD    = 0.75
-FAMILY_POSSIBLE_THRESHOLD  = 0.55
-GENUS_BEST_MATCH_THRESHOLD = 0.60
-GENUS_POSSIBLE_THRESHOLD   = 0.30
-
-FREE_DAILY_LIMIT = 5
-
-# Smart cropping — finds fossil region automatically
-# Set to False if results are worse with it on
-SMART_CROP = True
-
-MODEL_VERSION = 'v1'
-APP_VERSION   = '1.0.0'
+# Version info
+MODEL_VERSION = "v1.0"
+APP_VERSION   = "1.0.0"
