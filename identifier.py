@@ -7,7 +7,8 @@
 # Smart cropping automatically detects the fossil
 # region when it occupies a small part of the frame.
 # ============================================================
-
+import os
+os.environ['TF_XLA_FLAGS'] = '--tf_xla_enable_xla_devices=false'
 import io
 import json
 import numpy as np
