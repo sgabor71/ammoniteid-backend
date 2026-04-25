@@ -93,6 +93,16 @@
         .add-photo-btn:disabled {
             background: #ccc;
         }
+        .reset-btn {
+            background: #ef4444;
+            margin-left: 20px;
+        }
+        .reset-btn:hover {
+            background: #dc2626;
+        }
+        .reset-btn:disabled {
+            background: #ccc;
+        }
         .status {
             margin-top: 20px;
             padding: 15px;
@@ -150,6 +160,10 @@
             <button id="identifyBtn" onclick="identifyFossil()" disabled>
                 🔍 Identify Fossil
             </button>
+            
+            <button class="reset-btn" id="resetBtn" onclick="resetAll()" disabled>
+                🗑️ Reset All
+            </button>
         </div>
 
         <div id="status"></div>
@@ -160,12 +174,23 @@
         const MAX_PHOTOS = 3;
         let selectedPhotos = [];
 
+        // Reset all photos
+        function resetAll() {
+            if (confirm('Remove all photos?')) {
+                selectedPhotos = [];
+                updateUI();
+                document.getElementById('result').textContent = '';
+                document.getElementById('status').style.display = 'none';
+            }
+        }
+
         // Update UI whenever photos change
         function updateUI() {
             const grid = document.getElementById('photosGrid');
             const countSpan = document.getElementById('photoCount');
             const addBtn = document.getElementById('addPhotoBtn');
             const identifyBtn = document.getElementById('identifyBtn');
+            const resetBtn = document.getElementById('resetBtn');
 
             // Update count
             countSpan.textContent = selectedPhotos.length;
@@ -179,8 +204,9 @@
                 addBtn.textContent = selectedPhotos.length === 0 ? '📷 Choose Photo' : '📷 Add Another Photo';
             }
 
-            // Update identify button
+            // Update identify and reset buttons
             identifyBtn.disabled = selectedPhotos.length === 0;
+            resetBtn.disabled = selectedPhotos.length === 0;
 
             // Render photo grid
             grid.innerHTML = '';
