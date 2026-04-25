@@ -368,7 +368,7 @@ def build_result(
         'top_family':       top_family,
         'top_family_score': round(top_family_score),
         'family_scores': {
-            k: round(v 1)
+            k: round(v, 1)
             for k, v in family_scores.items()
         },
         'genus_breakdown':  genus_breakdown,
