@@ -241,7 +241,7 @@
             resultText += `CONFIDENCE: ${data.family_confidence || 0}%\n\n`
             
             if (data.genus_breakdown && data.genus_breakdown.length > 0) {
-                resultText += 'GENERA (subfamily):\n'
+                resultText += 'GENERA (Subfamily):\n'
                 data.genus_breakdown.forEach((g, i) => {
                     const bar = g.bar || '░░░░░░░░░░'
                     const pct = g.percentage || 0
