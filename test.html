@@ -241,13 +241,17 @@
             resultText += `CONFIDENCE: ${data.family_confidence || 0}%\n\n`
             
             if (data.genus_breakdown && data.genus_breakdown.length > 0) {
-                resultText += 'TOP GENERA:\n'
-                data.genus_breakdown.slice(0, 3).forEach((g, i) => {
-                    resultText += `${i+1}. ${g.genus} (${g.confidence}%)\n`
+                resultText += 'GENERA (subfamily):\n'
+                data.genus_breakdown.forEach((g, i) => {
+                    const bar = g.bar || '░░░░░░░░░░'
+                    const pct = g.percentage || 0
+                    resultText += `${i+1}. ${g.genus.padEnd(20)} ${bar}  ${pct}%\n`
                 })
             } else {
                 resultText += 'GENUS:     Cannot be determined from this image.'
             }
+            
+            document.getElementById('result').textContent = resultText
             
             document.getElementById('result').textContent = resultText
 
