@@ -339,6 +339,7 @@ def build_result(
                 raw / family_total
                 if family_total > 0 else 0.0
             )
+            print(f"GENUS DEBUG: {genus} = {norm}")
             genus_breakdown.append({
                 'genus':            genus,
                 'normalised_score': norm,
