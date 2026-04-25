@@ -8,6 +8,9 @@
 # Test page: http://localhost:8000/static/test.html
 # ============================================================
 
+import os
+os.environ['TF_XLA_FLAGS'] = '--tf_xla_enable_xla_devices=false'
+
 from fastapi import (
     FastAPI, File, UploadFile, HTTPException
 )
