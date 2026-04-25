@@ -327,6 +327,10 @@ def build_result(
     else:
         scenario = 'uncertain'
 
+    print(f"SCENARIO DEBUG: scenario={scenario}, score={top_family_score}")
+
+    
+
     # ── Build genus breakdown ────────────────────────────────
     genus_breakdown = []
     if scenario in ('likely', 'possible'):
