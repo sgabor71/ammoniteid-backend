@@ -331,7 +331,7 @@ def build_result(
     genus_breakdown = []
     if scenario in ('likely', 'possible'):
         family_genera = FAMILY_TO_GENERA[top_family]
-        family_total = top_family_score / 100.0  # Convert percentage back to probability
+        family_total = family_scores[top_family]  # Use raw probability
 
         for genus in family_genera:
             raw  = genus_scores.get(genus, 0.0)
