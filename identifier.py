@@ -13,6 +13,7 @@ import io
 import json
 import numpy as np
 import tensorflow as tf
+tf.config.optimizer.set_jit(False)  # Disable XLA JIT compilation
 from pathlib import Path
 from PIL import Image
 from config import (
