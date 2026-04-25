@@ -314,7 +314,7 @@ def build_result(
     top_family       = max(
         family_scores, key=family_scores.get
     )
-    top_family_score = family_scores[top_family]
+    top_family_score = family_scores[top_family] * 100
     top_non_am_score = combined['non_am_scores'][top_non_am]
 
     # ── Determine scenario ───────────────────────────────────
