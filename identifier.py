@@ -366,9 +366,9 @@ def build_result(
         'scenario':         scenario,
         'num_photos':       num_photos,
         'top_family':       top_family,
-        'top_family_score': round(top_family_score * 100),
+        'top_family_score': round(top_family_score),
         'family_scores': {
-            k: round(v * 100, 1)
+            k: round(v 1)
             for k, v in family_scores.items()
         },
         'genus_breakdown':  genus_breakdown,
