@@ -151,7 +151,7 @@
             </div>
             <div class="photos-grid" id="photosGrid"></div>
             
-            <input type="file" id="fileInput" accept="image/jpeg,image/png,image/jpg">
+            <input type="file" id="fileInput" accept="image/jpeg,image/png,image/jpg" multiple>
             
             <button class="add-photo-btn" id="addPhotoBtn" onclick="document.getElementById('fileInput').click()">
                 📷 Choose Photo
@@ -228,37 +228,53 @@
             });
         }
 
-        // Handle file selection
+        // Handle file selection (single or multiple)
         document.getElementById('fileInput').addEventListener('change', (e) => {
-            const file = e.target.files[0];
-            if (!file) return;
+            const files = Array.from(e.target.files);
+            if (files.length === 0) return;
 
-            // Validate file type
-            if (!file.type.match(/image\/(jpeg|jpg|png)/)) {
-                showStatus('Please select a JPG or PNG image.', 'error');
+            // Check how many we can add
+            const remainingSlots = MAX_PHOTOS - selectedPhotos.length;
+            if (remainingSlots === 0) {
+                showStatus('Maximum 3 photos already selected.', 'error');
                 e.target.value = '';
                 return;
             }
 
-            // Validate file size (10MB max)
-            if (file.size > 10 * 1024 * 1024) {
-                showStatus('File is too large. Maximum 10MB.', 'error');
-                e.target.value = '';
-                return;
+            // Take only what we have room for
+            const filesToAdd = files.slice(0, remainingSlots);
+            
+            if (files.length > remainingSlots) {
+                showStatus(`Only adding ${remainingSlots} photo(s) - maximum is 3 total.`, 'error');
             }
 
-            // Create preview
-            const reader = new FileReader();
-            reader.onload = (event) => {
-                selectedPhotos.push({
-                    file: file,
-                    preview: event.target.result
-                });
-                updateUI();
-            };
-            reader.readAsDataURL(file);
+            // Process each file
+            filesToAdd.forEach(file => {
+                // Validate file type
+                if (!file.type.match(/image\/(jpeg|jpg|png)/)) {
+                    showStatus(`${file.name} is not a JPG or PNG image.`, 'error');
+                    return;
+                }
 
-            // Reset input so same file can be selected again
+                // Validate file size (10MB max)
+                if (file.size > 10 * 1024 * 1024) {
+                    showStatus(`${file.name} is too large. Maximum 10MB.`, 'error');
+                    return;
+                }
+
+                // Create preview
+                const reader = new FileReader();
+                reader.onload = (event) => {
+                    selectedPhotos.push({
+                        file: file,
+                        preview: event.target.result
+                    });
+                    updateUI();
+                };
+                reader.readAsDataURL(file);
+            });
+
+            // Reset input so same files can be selected again
             e.target.value = '';
         });
 
