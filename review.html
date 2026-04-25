@@ -131,11 +131,109 @@
             border-radius: 8px;
             border: 2px solid #ddd;
             cursor: pointer;
-            transition: border-color 0.2s;
+            transition: all 0.2s;
         }
 
         .photo-gallery img:hover {
             border-color: #1b4332;
+            transform: scale(1.02);
+        }
+
+        /* Lightbox styles */
+        .lightbox {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.95);
+            z-index: 9999;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .lightbox.active {
+            display: flex;
+        }
+
+        .lightbox-content {
+            position: relative;
+            max-width: 95%;
+            max-height: 95%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .lightbox-content img {
+            max-width: 100%;
+            max-height: 95vh;
+            object-fit: contain;
+            border-radius: 4px;
+        }
+
+        .lightbox-close {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            font-size: 40px;
+            color: white;
+            cursor: pointer;
+            background: rgba(0, 0, 0, 0.5);
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.2s;
+        }
+
+        .lightbox-close:hover {
+            background: rgba(0, 0, 0, 0.8);
+        }
+
+        .lightbox-nav {
+            position: absolute;
+            top: 50%;
+            transform: translateY(-50%);
+            font-size: 40px;
+            color: white;
+            cursor: pointer;
+            background: rgba(0, 0, 0, 0.5);
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background 0.2s;
+            user-select: none;
+        }
+
+        .lightbox-nav:hover {
+            background: rgba(0, 0, 0, 0.8);
+        }
+
+        .lightbox-nav.prev {
+            left: 20px;
+        }
+
+        .lightbox-nav.next {
+            right: 20px;
+        }
+
+        .lightbox-counter {
+            position: absolute;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            color: white;
+            font-size: 16px;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 8px 16px;
+            border-radius: 20px;
         }
 
         .ai-result {
@@ -362,6 +460,17 @@
     <div class="loading">Loading queue...</div>
 </div>
 
+<!-- Lightbox for photo zoom -->
+<div class="lightbox" id="lightbox">
+    <div class="lightbox-close" onclick="closeLightbox()">×</div>
+    <div class="lightbox-nav prev" id="lightbox-prev" onclick="navigateLightbox(-1)">‹</div>
+    <div class="lightbox-content">
+        <img id="lightbox-img" src="" alt="Zoomed photo">
+    </div>
+    <div class="lightbox-nav next" id="lightbox-next" onclick="navigateLightbox(1)">›</div>
+    <div class="lightbox-counter" id="lightbox-counter"></div>
+</div>
+
 <script>
 const API = 'https://ammoniteid.onrender.com'
 
@@ -396,6 +505,61 @@ const GENERA = {
 }
 
 let currentFilter = 'pending'
+let lightboxPhotos = []
+let currentPhotoIndex = 0
+
+// Lightbox functions
+function openLightbox(photos, startIndex) {
+    lightboxPhotos = photos
+    currentPhotoIndex = startIndex
+    showCurrentPhoto()
+    document.getElementById('lightbox').classList.add('active')
+    
+    // Keyboard navigation
+    document.addEventListener('keydown', handleLightboxKeyboard)
+}
+
+function closeLightbox() {
+    document.getElementById('lightbox').classList.remove('active')
+    document.removeEventListener('keydown', handleLightboxKeyboard)
+}
+
+function navigateLightbox(direction) {
+    currentPhotoIndex += direction
+    if (currentPhotoIndex < 0) currentPhotoIndex = lightboxPhotos.length - 1
+    if (currentPhotoIndex >= lightboxPhotos.length) currentPhotoIndex = 0
+    showCurrentPhoto()
+}
+
+function showCurrentPhoto() {
+    const img = document.getElementById('lightbox-img')
+    const counter = document.getElementById('lightbox-counter')
+    const prevBtn = document.getElementById('lightbox-prev')
+    const nextBtn = document.getElementById('lightbox-next')
+    
+    img.src = lightboxPhotos[currentPhotoIndex]
+    counter.textContent = `${currentPhotoIndex + 1} / ${lightboxPhotos.length}`
+    
+    // Hide nav buttons if only one photo
+    if (lightboxPhotos.length === 1) {
+        prevBtn.style.display = 'none'
+        nextBtn.style.display = 'none'
+    } else {
+        prevBtn.style.display = 'flex'
+        nextBtn.style.display = 'flex'
+    }
+}
+
+function handleLightboxKeyboard(e) {
+    if (e.key === 'Escape') closeLightbox()
+    if (e.key === 'ArrowLeft') navigateLightbox(-1)
+    if (e.key === 'ArrowRight') navigateLightbox(1)
+}
+
+// Click outside to close
+document.getElementById('lightbox').addEventListener('click', (e) => {
+    if (e.target.id === 'lightbox') closeLightbox()
+})
 
 function setFilter(status) {
     currentFilter = status
@@ -478,13 +642,16 @@ function buildPhotoGallery(item) {
         return '<p class="no-photos">No photos saved</p>'
     }
     
-    const photoHtml = paths.map((path, idx) => {
+    const photoUrls = paths.map((path, idx) => {
         const photoName = `photo_${idx + 1}.jpg`
-        const photoUrl = `${API}/photo/${item.identification_id}/${photoName}`
-        return `<img src="${photoUrl}" 
+        return `${API}/photo/${item.identification_id}/${photoName}`
+    })
+    
+    const photoHtml = photoUrls.map((url, idx) => {
+        return `<img src="${url}" 
                      alt="Photo ${idx + 1}"
-                     onclick="window.open('${photoUrl}', '_blank')"
-                     title="Click to view full size">`
+                     onclick='openLightbox(${JSON.stringify(photoUrls)}, ${idx})'
+                     title="Click to zoom">`
     }).join('')
     
     return `<div class="photo-gallery">${photoHtml}</div>`
