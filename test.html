@@ -1,291 +1,327 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <title>AmmoniteID — Test Interface</title>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AmmoniteID Test</title>
     <style>
         body {
-            font-family: Arial, sans-serif;
+            font-family: 'Courier New', monospace;
             max-width: 800px;
-            margin: 40px auto;
+            margin: 50px auto;
             padding: 20px;
             background: #f5f5f5;
         }
         h1 {
             color: #333;
         }
-        .box {
+        .container {
             background: white;
-            padding: 24px;
+            padding: 30px;
             border-radius: 8px;
-            margin-bottom: 20px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
         }
-        input[type="file"] {
-            margin: 12px 0;
-            display: block;
-        }
-        button {
-            background: #2d6a4f;
-            color: white;
-            border: none;
-            padding: 12px 24px;
-            border-radius: 6px;
-            font-size: 16px;
-            cursor: pointer;
-            margin-top: 8px;
-        }
-        button:hover {
-            background: #1b4332;
-        }
-        button:disabled {
-            background: #aaa;
-            cursor: not-allowed;
-        }
-        #result {
-            white-space: pre-wrap;
-            font-family: monospace;
-            font-size: 15px;
-            line-height: 1.6;
-            background: #f8f8f8;
-            padding: 20px;
-            border-radius: 6px;
-            border: 1px solid #ddd;
-        }
-        #status {
+        .instruction {
             color: #666;
-            font-style: italic;
-            margin: 8px 0;
+            margin-bottom: 20px;
+            font-size: 14px;
         }
-        .preview {
-            display: flex;
-            gap: 10px;
-            flex-wrap: wrap;
-            margin: 12px 0;
+        .photo-section {
+            margin-bottom: 30px;
         }
-        .preview-item {
+        .photos-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+            gap: 15px;
+            margin-bottom: 20px;
+        }
+        .photo-item {
             position: relative;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            overflow: hidden;
+            background: #f9f9f9;
         }
-        .preview img {
-            width: 150px;
+        .photo-item img {
+            width: 100%;
             height: 150px;
             object-fit: cover;
-            border-radius: 4px;
-            border: 1px solid #ddd;
+            display: block;
         }
-        .remove-photo {
+        .photo-item .remove-btn {
             position: absolute;
-            top: 4px;
-            right: 4px;
-            background: #ef4444;
+            top: 5px;
+            right: 5px;
+            background: red;
             color: white;
             border: none;
             border-radius: 50%;
-            width: 24px;
-            height: 24px;
+            width: 25px;
+            height: 25px;
             cursor: pointer;
-            font-size: 14px;
+            font-size: 16px;
             line-height: 1;
             padding: 0;
         }
-        .label {
-            font-weight: bold;
-            color: #333;
-            margin-bottom: 6px;
+        .photo-item .remove-btn:hover {
+            background: darkred;
         }
-        .hint {
+        button {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            font-size: 16px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin-right: 10px;
+            font-family: 'Courier New', monospace;
+        }
+        button:hover {
+            background: #45a049;
+        }
+        button:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+        .add-photo-btn {
+            background: #2196F3;
+        }
+        .add-photo-btn:hover {
+            background: #0b7dda;
+        }
+        .add-photo-btn:disabled {
+            background: #ccc;
+        }
+        .status {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+        .status.loading {
+            background: #fff3cd;
+            color: #856404;
+        }
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+        }
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        #result {
+            margin-top: 20px;
+            padding: 20px;
+            background: #f9f9f9;
+            border-radius: 4px;
+            white-space: pre-wrap;
+            font-family: 'Courier New', monospace;
+            border: 1px solid #ddd;
+        }
+        input[type="file"] {
+            display: none;
+        }
+        .photo-count {
             color: #666;
-            font-size: 13px;
-            margin-top: 4px;
+            font-size: 14px;
+            margin-bottom: 10px;
         }
     </style>
 </head>
 <body>
-
-<h1>AmmoniteID — Test Interface</h1>
-
-<div class="box">
-    <div class="label">Select 1 to 3 photos of the same specimen</div>
-    <div class="hint">
-        Multiple photos from different angles improve accuracy
-    </div>
-    <input
-        type="file"
-        id="photos"
-        accept="image/jpeg,image/png"
-        multiple
-    >
-    <div class="preview" id="preview"></div>
-    <button onclick="identify()" id="btn">
-        Identify Fossil
-    </button>
-    <div id="status"></div>
-</div>
-
-<div class="box" id="result-box" style="display:none">
-    <div class="label">Result</div>
-    <div id="result"></div>
-</div>
-
-<div class="box" id="debug-box" style="display:none">
-    <div class="label">Full response (for debugging)</div>
-    <div id="debug"
-         style="font-size:12px;font-family:monospace;
-                white-space:pre-wrap;word-break:break-all">
-    </div>
-</div>
-
-<script>
-    const API = 'https://ammoniteid.onrender.com'
-    let selectedFiles = []
-
-    // Show image previews when files selected
-    document.getElementById('photos')
-        .addEventListener('change', function(e) {
-            const files = Array.from(this.files)
-            
-            if (files.length > 3) {
-                alert('Maximum 3 photos allowed.')
-                this.value = ''
-                selectedFiles = []
-                updatePreview()
-                return
-            }
-
-            selectedFiles = files
-            updatePreview()
-        })
-
-    function updatePreview() {
-        const preview = document.getElementById('preview')
-        preview.innerHTML = ''
-
-        selectedFiles.forEach((file, index) => {
-            const reader = new FileReader()
-            reader.onload = function(e) {
-                const item = document.createElement('div')
-                item.className = 'preview-item'
-                
-                const img = document.createElement('img')
-                img.src = e.target.result
-                
-                const removeBtn = document.createElement('button')
-                removeBtn.className = 'remove-photo'
-                removeBtn.innerHTML = '×'
-                removeBtn.onclick = () => removePhoto(index)
-                
-                item.appendChild(img)
-                item.appendChild(removeBtn)
-                preview.appendChild(item)
-            }
-            reader.readAsDataURL(file)
-        })
-    }
-
-    function removePhoto(index) {
-        selectedFiles.splice(index, 1)
-        updatePreview()
+    <div class="container">
+        <h1>🐚 AmmoniteID Test</h1>
+        <p class="instruction">Select 1 to 3 photos of the same specimen. Multiple photos from different angles improve accuracy.</p>
         
-        // Clear the file input and rebuild it
-        const input = document.getElementById('photos')
-        const dt = new DataTransfer()
-        selectedFiles.forEach(f => dt.items.add(f))
-        input.files = dt.files
-    }
-
-    async function identify() {
-        const input  = document.getElementById('photos')
-        const btn    = document.getElementById('btn')
-        const status = document.getElementById('status')
-
-        if (selectedFiles.length === 0) {
-            alert('Please select at least one photo.')
-            return
-        }
-
-        // Build form data
-        const formData = new FormData()
-        selectedFiles.forEach(file => {
-            formData.append('photos', file)
-        })
-
-        // Update UI
-        btn.disabled    = true
-        btn.textContent = 'Identifying...'
-        status.textContent = 
-            `Sending ${selectedFiles.length} photo${selectedFiles.length > 1 ? 's' : ''} to server...`
-
-        document.getElementById('result-box')
-            .style.display = 'none'
-        document.getElementById('debug-box')
-            .style.display = 'none'
-
-        try {
-            const response = await fetch(
-                API + '/identify',
-                {
-                    method: 'POST',
-                    body:   formData,
-                }
-            )
-
-            const data = await response.json()
-
-            if (!response.ok) {
-                status.textContent =
-                    'Error: ' + (data.detail || 'Unknown error')
-                return
-            }
-
-            // Show formatted result with actual API data
-            let resultText = ''
+        <div class="photo-section">
+            <div class="photo-count">
+                <span id="photoCount">0</span> of 3 photos selected
+            </div>
+            <div class="photos-grid" id="photosGrid"></div>
             
-            if (data.scenario === 'non_ammonite') {
-                // Non-ammonite display
-                resultText = `IDENTIFICATION: ${data.non_am_display || 'Non-ammonite'}\n`
-                resultText += `CONFIDENCE: ${data.non_am_total || 0}%\n\n`
-                resultText += `CATEGORY: ${data.non_am_category || 'Other'}\n`
+            <input type="file" id="fileInput" accept="image/jpeg,image/png,image/jpg">
+            
+            <button class="add-photo-btn" id="addPhotoBtn" onclick="document.getElementById('fileInput').click()">
+                📷 Choose Photo
+            </button>
+            
+            <button id="identifyBtn" onclick="identifyFossil()" disabled>
+                🔍 Identify Fossil
+            </button>
+        </div>
+
+        <div id="status"></div>
+        <div id="result"></div>
+    </div>
+
+    <script>
+        const MAX_PHOTOS = 3;
+        let selectedPhotos = [];
+
+        // Update UI whenever photos change
+        function updateUI() {
+            const grid = document.getElementById('photosGrid');
+            const countSpan = document.getElementById('photoCount');
+            const addBtn = document.getElementById('addPhotoBtn');
+            const identifyBtn = document.getElementById('identifyBtn');
+
+            // Update count
+            countSpan.textContent = selectedPhotos.length;
+
+            // Update add photo button
+            if (selectedPhotos.length >= MAX_PHOTOS) {
+                addBtn.disabled = true;
+                addBtn.textContent = '📷 Maximum 3 photos';
             } else {
-                // Ammonite display
-                resultText = `FAMILY:   ${data.top_family || 'Uncertain'}\n`
-                resultText += `CONFIDENCE: ${data.family_confidence || 0}%\n\n`
-                
-                if (data.genus_breakdown && data.genus_breakdown.length > 0) {
-                    resultText += 'GENERA (subfamily):\n'
-                    data.genus_breakdown.forEach((g, i) => {
-                        const bar = g.bar || '░░░░░░░░░░'
-                        const pct = g.percentage || 0
-                        resultText += `${i+1}. ${g.genus.padEnd(20)} ${bar}  ${pct}%\n`
-                    })
-                } else {
-                    resultText += 'GENUS:     Cannot be determined from this image.'
-                }
+                addBtn.disabled = false;
+                addBtn.textContent = selectedPhotos.length === 0 ? '📷 Choose Photo' : '📷 Add Another Photo';
             }
-            
-            document.getElementById('result').textContent = resultText
 
-            document.getElementById('result-box')
-                .style.display = 'block'
+            // Update identify button
+            identifyBtn.disabled = selectedPhotos.length === 0;
 
-            // Show full debug response
-            document.getElementById('debug').textContent =
-                JSON.stringify(data, null, 2)
-
-            document.getElementById('debug-box')
-                .style.display = 'block'
-
-            status.textContent =
-                `Done. Scenario: ${data.scenario} | ` +
-                `Photos analyzed: ${data.num_photos}`
-
-        } catch (err) {
-            status.textContent =
-                'Connection error: ' + err.message
-        } finally {
-            btn.disabled    = false
-            btn.textContent = 'Identify Fossil'
+            // Render photo grid
+            grid.innerHTML = '';
+            selectedPhotos.forEach((photo, index) => {
+                const photoItem = document.createElement('div');
+                photoItem.className = 'photo-item';
+                
+                const img = document.createElement('img');
+                img.src = photo.preview;
+                
+                const removeBtn = document.createElement('button');
+                removeBtn.className = 'remove-btn';
+                removeBtn.textContent = '×';
+                removeBtn.onclick = () => removePhoto(index);
+                
+                photoItem.appendChild(img);
+                photoItem.appendChild(removeBtn);
+                grid.appendChild(photoItem);
+            });
         }
-    }
-</script>
 
+        // Handle file selection
+        document.getElementById('fileInput').addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+
+            // Validate file type
+            if (!file.type.match(/image\/(jpeg|jpg|png)/)) {
+                showStatus('Please select a JPG or PNG image.', 'error');
+                e.target.value = '';
+                return;
+            }
+
+            // Validate file size (10MB max)
+            if (file.size > 10 * 1024 * 1024) {
+                showStatus('File is too large. Maximum 10MB.', 'error');
+                e.target.value = '';
+                return;
+            }
+
+            // Create preview
+            const reader = new FileReader();
+            reader.onload = (event) => {
+                selectedPhotos.push({
+                    file: file,
+                    preview: event.target.result
+                });
+                updateUI();
+            };
+            reader.readAsDataURL(file);
+
+            // Reset input so same file can be selected again
+            e.target.value = '';
+        });
+
+        // Remove photo
+        function removePhoto(index) {
+            selectedPhotos.splice(index, 1);
+            updateUI();
+        }
+
+        // Show status message
+        function showStatus(message, type) {
+            const status = document.getElementById('status');
+            status.textContent = message;
+            status.className = `status ${type}`;
+            status.style.display = 'block';
+        }
+
+        // Identify fossil
+        async function identifyFossil() {
+            if (selectedPhotos.length === 0) return;
+
+            const identifyBtn = document.getElementById('identifyBtn');
+            const addBtn = document.getElementById('addPhotoBtn');
+            
+            // Disable buttons
+            identifyBtn.disabled = true;
+            addBtn.disabled = true;
+
+            showStatus(`Analyzing ${selectedPhotos.length} photo${selectedPhotos.length > 1 ? 's' : ''}...`, 'loading');
+            document.getElementById('result').textContent = '';
+
+            try {
+                const formData = new FormData();
+                selectedPhotos.forEach(photo => {
+                    formData.append('photos', photo.file);
+                });
+
+                const response = await fetch('/identify', {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+                }
+
+                const data = await response.json();
+
+                showStatus(`Done. Scenario: ${data.scenario} | Photos analyzed: ${data.num_photos}`, 'success');
+
+                // Display result based on scenario
+                let resultText = '';
+                
+                if (data.scenario === 'non_ammonite') {
+                    // Non-ammonite display
+                    resultText = `IDENTIFICATION: ${data.non_am_display || 'Non-ammonite'}\n`;
+                    resultText += `CONFIDENCE: ${data.non_am_total || 0}%\n\n`;
+                    resultText += `CATEGORY: ${data.non_am_category || 'Other'}\n`;
+                } else {
+                    // Ammonite display
+                    resultText = `FAMILY:   ${data.top_family || 'Uncertain'}\n`;
+                    resultText += `CONFIDENCE: ${data.family_confidence || 0}%\n\n`;
+                    
+                    if (data.genus_breakdown && data.genus_breakdown.length > 0) {
+                        resultText += 'GENERA (subfamily):\n';
+                        data.genus_breakdown.forEach((g, i) => {
+                            const bar = g.bar || '░░░░░░░░░░';
+                            const pct = g.percentage || 0;
+                            resultText += `${i+1}. ${g.genus.padEnd(20)} ${bar}  ${pct}%\n`;
+                        });
+                    } else {
+                        resultText += 'GENUS:     Cannot be determined from this image.';
+                    }
+                }
+                
+                document.getElementById('result').textContent = resultText;
+
+            } catch (error) {
+                showStatus(`Connection error: ${error.message}`, 'error');
+                console.error('Error:', error);
+            } finally {
+                // Re-enable buttons
+                identifyBtn.disabled = false;
+                updateUI(); // This will correctly enable/disable addBtn based on photo count
+            }
+        }
+
+        // Initialize
+        updateUI();
+    </script>
 </body>
 </html>
