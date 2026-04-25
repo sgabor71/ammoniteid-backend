@@ -319,7 +319,7 @@ def build_result(
     top_non_am_score = combined['non_am_scores'][top_non_am]
 
     # ── Determine scenario ───────────────────────────────────
-    if non_am_total > top_family_score:
+    if non_am_total * 100 > top_family_score:
         scenario = 'non_ammonite'
     elif top_family_score >= FAMILY_LIKELY_THRESHOLD:
         scenario = 'likely'
