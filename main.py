@@ -170,16 +170,16 @@ def save_to_review_queue(
     # Check if photo_paths column exists, if not add it
     c.execute("PRAGMA table_info(review_queue)")
     columns = [col[1] for col in c.fetchall()]
-    if 'photo_paths' not in columns:
+if  'photo_paths' not in columns:
         c.execute(
             "ALTER TABLE review_queue ADD COLUMN photo_paths TEXT"
         )
     # Check if it's a non-ammonite
-    if result.get('scenario') == 'non_ammonite':
+if  result.get('scenario') == 'non_ammonite':
     ai_family = result.get('non_am_display', 'Non-ammonite')
     ai_genus = 'N/A'
     ai_confidence = result.get('non_am_total', 0)
-    else:
+else:
     ai_family = result.get('top_family')
     ai_genus = top_genus
     ai_confidence = result.get('top_family_score')
