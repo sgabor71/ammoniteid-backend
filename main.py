@@ -174,22 +174,30 @@ def save_to_review_queue(
         c.execute(
             "ALTER TABLE review_queue ADD COLUMN photo_paths TEXT"
         )
-    
+    # Check if it's a non-ammonite
+    if result.get('scenario') == 'non_ammonite':
+    ai_family = result.get('non_am_display', 'Non-ammonite')
+    ai_genus = 'N/A'
+    ai_confidence = result.get('non_am_total', 0)
+    else:
+    ai_family = result.get('top_family')
+    ai_genus = top_genus
+    ai_confidence = result.get('top_family_score')
     c.execute('''
         INSERT INTO review_queue
         (id, identification_id, timestamp,
          ai_family, ai_genus, ai_confidence, status, photo_paths)
         VALUES (?, ?, ?, ?, ?, ?, ?, ?)
     ''', (
-        review_id,
-        identification_id,
-        datetime.utcnow().isoformat(),
-        result.get('top_family'),
-        top_genus,
-        result.get('top_family_score'),
-        'pending',
-        photo_paths_json
-    ))
+    review_id,
+    identification_id,
+    datetime.utcnow().isoformat(),
+    result.get('top_family'),          # ← Change these 3 lines
+    top_genus,                         # ← 
+    result.get('top_family_score'),    # ←
+    'pending',
+    photo_paths_json
+))
     conn.commit()
     conn.close()
     return review_id
