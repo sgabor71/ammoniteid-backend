@@ -237,21 +237,29 @@
             }
 
             // Show formatted result with actual API data
-            let resultText = `FAMILY:   ${data.top_family || 'Uncertain'}\n`
-            resultText += `CONFIDENCE: ${data.family_confidence || 0}%\n\n`
+            let resultText = ''
             
-            if (data.genus_breakdown && data.genus_breakdown.length > 0) {
-                resultText += 'GENERA (Subfamily):\n'
-                data.genus_breakdown.forEach((g, i) => {
-                    const bar = g.bar || '░░░░░░░░░░'
-                    const pct = g.percentage || 0
-                    resultText += `${i+1}. ${g.genus.padEnd(20)} ${bar}  ${pct}%\n`
-                })
+            if (data.scenario === 'non_ammonite') {
+                // Non-ammonite display
+                resultText = `IDENTIFICATION: ${data.non_am_display || 'Non-ammonite'}\n`
+                resultText += `CONFIDENCE: ${data.non_am_total || 0}%\n\n`
+                resultText += `CATEGORY: ${data.non_am_category || 'Other'}\n`
             } else {
-                resultText += 'GENUS:     Cannot be determined from this image.'
+                // Ammonite display
+                resultText = `FAMILY:   ${data.top_family || 'Uncertain'}\n`
+                resultText += `CONFIDENCE: ${data.family_confidence || 0}%\n\n`
+                
+                if (data.genus_breakdown && data.genus_breakdown.length > 0) {
+                    resultText += 'GENERA (subfamily):\n'
+                    data.genus_breakdown.forEach((g, i) => {
+                        const bar = g.bar || '░░░░░░░░░░'
+                        const pct = g.percentage || 0
+                        resultText += `${i+1}. ${g.genus.padEnd(20)} ${bar}  ${pct}%\n`
+                    })
+                } else {
+                    resultText += 'GENUS:     Cannot be determined from this image.'
+                }
             }
-            
-            document.getElementById('result').textContent = resultText
             
             document.getElementById('result').textContent = resultText
 
