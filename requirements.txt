@@ -1,8 +1,6 @@
 # ============================================================
 # requirements.txt — Python dependencies (MEMORY OPTIMIZED)
-# AmmoniteID v1.0 - MATCHING TF VERSION
-# ============================================================
-# Using TensorFlow 2.21.0 to match the model conversion version
+# AmmoniteID v1.0 - CORRECTED VERSION
 # ============================================================
 
 fastapi==0.115.5
@@ -11,6 +9,6 @@ pillow==11.0.0
 python-multipart==0.0.20
 aiofiles==24.1.0
 
-# FIXED: Using same TensorFlow version as model conversion (2.21.0)
+# FIXED: TensorFlow 2.21.0 requires numpy>=1.26.0
 tensorflow==2.21.0
-numpy==1.24.3
+numpy>=1.26.0
