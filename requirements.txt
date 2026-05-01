@@ -1,11 +1,9 @@
 # ============================================================
 # requirements.txt — Python dependencies (MEMORY OPTIMIZED)
-# AmmoniteID v1.0
+# AmmoniteID v1.0 - FIXED VERSION
 # ============================================================
-# CHANGES FROM ORIGINAL:
-# - Removed tensorflow (heavy, 500MB+ installed)
-# - Added tflite-runtime (lightweight, ~20MB installed)
-# - This saves ~480MB of disk space and RAM
+# FIXED: Updated tflite-runtime to version 2.16.1 for compatibility
+# with models created by TensorFlow 2.21.0
 # ============================================================
 
 fastapi==0.115.5
@@ -14,7 +12,6 @@ pillow==11.0.0
 python-multipart==0.0.20
 aiofiles==24.1.0
 
-# CHANGED: Use TFLite runtime instead of full TensorFlow
-# This is 20x smaller and uses 60% less memory
-tflite-runtime==2.14.0
+# FIXED: Updated to compatible version (was 2.14.0)
+tflite-runtime==2.16.1
 numpy==1.24.3
