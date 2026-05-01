@@ -1,9 +1,8 @@
 # ============================================================
 # requirements.txt — Python dependencies (MEMORY OPTIMIZED)
-# AmmoniteID v1.0 - STABLE VERSION
+# AmmoniteID v1.0 - MATCHING TF VERSION
 # ============================================================
-# Using full TensorFlow instead of tflite-runtime
-# This ensures compatibility and still saves memory vs old code
+# Using TensorFlow 2.21.0 to match the model conversion version
 # ============================================================
 
 fastapi==0.115.5
@@ -12,8 +11,6 @@ pillow==11.0.0
 python-multipart==0.0.20
 aiofiles==24.1.0
 
-# Using full TensorFlow for guaranteed compatibility
-# Model memory: ~200MB (still better than old 400-500MB total!)
-# Streaming + cleanup still saves tons of memory
-tensorflow==2.16.1
+# FIXED: Using same TensorFlow version as model conversion (2.21.0)
+tensorflow==2.21.0
 numpy==1.24.3
