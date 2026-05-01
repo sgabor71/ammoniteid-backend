@@ -1,6 +1,10 @@
 # ============================================================
-# config.py — Configuration constants
+# config.py — Configuration constants (MEMORY OPTIMIZED)
 # AmmoniteID v1.0
+# ============================================================
+# CHANGES FROM ORIGINAL:
+# - Added MODEL_PATH_TFLITE for the new lightweight model
+# - Reduced MAX_FILE_MB from 10 to 5 (safer for 500MB limit)
 # ============================================================
 
 import os
@@ -12,11 +16,13 @@ IS_RENDER = os.getenv('RENDER') is not None
 # Base directory
 BASE_DIR = Path(__file__).parent
 
-# Model and class info file paths
-MODEL_PATH = BASE_DIR / 'ammonite_model_v1.keras'
-CLASS_INFO = BASE_DIR / 'class_info.json'  # Path to the JSON file
+# CHANGED: Model paths - now using TFLite
+MODEL_PATH = BASE_DIR / 'ammonite_model_v1.keras'  # Keep old for reference
+MODEL_PATH_TFLITE = BASE_DIR / 'ammonite_model_v1.tflite'  # ADDED: New lightweight model
 
-# Storage directories - different paths for Render vs local
+CLASS_INFO = BASE_DIR / 'class_info.json'
+
+# Storage directories
 if IS_RENDER:
     UPLOAD_DIR = Path('/tmp/uploads')
     REVIEW_DIR = Path('/tmp/review_queue')
@@ -38,8 +44,8 @@ GENUS_POSSIBLE_THRESHOLD = 0.15
 
 # Upload limits
 MAX_PHOTOS  = 3
-MAX_FILE_MB = 10
+MAX_FILE_MB = 5  # CHANGED: Reduced from 10 to 5 for memory safety
 
 # Version info
-MODEL_VERSION = "v1.0"
-APP_VERSION   = "1.0.0"
+MODEL_VERSION = "v1.0-tflite"  # CHANGED: Updated version string
+APP_VERSION   = "1.0.1"  # CHANGED: Bumped version

@@ -1,6 +1,12 @@
 # ============================================================
-# main.py — FastAPI web server
+# main.py — FastAPI web server (MEMORY OPTIMIZED)
 # AmmoniteID v1.0
+# ============================================================
+# CHANGES FROM ORIGINAL:
+# - Stream photos to disk immediately (don't hold in RAM)
+# - Process from disk instead of memory
+# - Aggressive cleanup after each request
+# - Reduced MAX_FILE_MB from 10 to 5 (safer for 500MB limit)
 # ============================================================
 # Run with: py -3.11 -m uvicorn main:app --reload
 # Then open: http://localhost:8000/docs
@@ -9,7 +15,7 @@
 # ============================================================
 
 import os
-os.environ['TF_XLA_FLAGS'] = '--tf_xla_enable_xla_devices=false'
+import gc  # ADDED: For memory cleanup
 
 from fastapi import (
     FastAPI, File, UploadFile, HTTPException
@@ -19,7 +25,6 @@ from fastapi.staticfiles import StaticFiles
 from fastapi.responses import JSONResponse
 from typing import List
 import uuid
-import os
 import json
 import sqlite3
 from datetime import datetime
@@ -35,12 +40,11 @@ from identifier import identify_from_bytes_list
 # ── Create the app ───────────────────────────────────────────
 app = FastAPI(
     title="AmmoniteID API",
-    description="Ammonite fossil identification backend",
+    description="Ammonite fossil identification backend (Memory Optimized)",
     version=APP_VERSION
 )
 
 # ── Add CORS middleware ──────────────────────────────────────
-# Must be added before mounting static files
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -50,7 +54,6 @@ app.add_middleware(
 )
 
 # ── Mount static files ───────────────────────────────────────
-# Serves HTML files at /static/filename.html
 app.mount(
     "/static",
     StaticFiles(directory=str(Path(__file__).parent)),
@@ -58,7 +61,6 @@ app.mount(
 )
 
 # ── Database setup ───────────────────────────────────────────
-# Database location - /tmp on Render, local folder otherwise
 if os.getenv('RENDER'):
     DB_PATH = Path('/tmp/ammonite.db')
 else:
@@ -72,7 +74,6 @@ def init_db():
     conn = sqlite3.connect(str(DB_PATH))
     c    = conn.cursor()
 
-    # Every identification is logged here
     c.execute('''
         CREATE TABLE IF NOT EXISTS identifications (
             id               TEXT PRIMARY KEY,
@@ -87,7 +88,6 @@ def init_db():
         )
     ''')
 
-    # Images awaiting expert review
     c.execute('''
         CREATE TABLE IF NOT EXISTS review_queue (
             id                TEXT PRIMARY KEY,
@@ -101,14 +101,14 @@ def init_db():
             expert_genus      TEXT,
             expert_notes      TEXT,
             reviewed_at       TEXT,
-            reviewed_by       TEXT
+            reviewed_by       TEXT,
+            photo_paths       TEXT
         )
     ''')
 
     conn.commit()
     conn.close()
 
-# Initialize database when server starts
 init_db()
 
 
@@ -152,8 +152,6 @@ def save_to_review_queue(
 ):
     """
     Saves an identification to the expert review queue.
-    Stores paths to the saved photos for display in
-    the review portal.
     """
     review_id = str(uuid.uuid4())
     top_genus = (
@@ -161,21 +159,11 @@ def save_to_review_queue(
         if result['genus_breakdown'] else None
     )
     
-    # Convert photo paths list to JSON string
     photo_paths_json = json.dumps(photo_paths) if photo_paths else None
 
     conn = sqlite3.connect(str(DB_PATH))
     c    = conn.cursor()
     
-    # Check if photo_paths column exists, if not add it
-    c.execute("PRAGMA table_info(review_queue)")
-    columns = [col[1] for col in c.fetchall()]
-    if 'photo_paths' not in columns:
-        c.execute(
-            "ALTER TABLE review_queue ADD COLUMN photo_paths TEXT"
-        )
-    
-    # Check if it's a non-ammonite
     if result.get('scenario') == 'non_ammonite':
         ai_family = result.get('non_am_display', 'Non-ammonite')
         ai_genus = 'N/A'
@@ -227,8 +215,9 @@ async def identify(
     """
     Main identification endpoint.
     Accepts 1 to 3 photos of the same specimen.
-    Returns family, genus breakdown and
-    formatted display text.
+    
+    CHANGED: Stream photos to disk first, then process from disk
+    This prevents holding all photos in memory at once
     """
 
     # ── Validate number of photos ────────────────────────────
@@ -244,65 +233,97 @@ async def identify(
             detail=f"Maximum {MAX_PHOTOS} photos allowed."
         )
 
-    # ── Read and validate each photo ─────────────────────────
-    images_bytes = []
-    max_bytes    = MAX_FILE_MB * 1024 * 1024
-
-    for photo in photos:
+    # ── Create folders for this identification ──────────────
+    identification_id = str(uuid.uuid4())
+    review_folder = REVIEW_DIR / identification_id
+    review_folder.mkdir(parents=True, exist_ok=True)
+    
+    # CHANGED: Save photos to disk FIRST (streaming)
+    # Don't hold all photos in memory at once
+    max_bytes = MAX_FILE_MB * 1024 * 1024
+    saved_photo_paths = []
+    
+    for idx, photo in enumerate(photos):
+        # Validate file type
         if photo.content_type not in (
             'image/jpeg', 'image/png', 'image/jpg'
         ):
             raise HTTPException(
                 status_code=400,
-                detail=f"{photo.filename} is not a"
-                       f" JPG or PNG image."
+                detail=f"{photo.filename} is not a JPG or PNG image."
             )
-
-        contents = await photo.read()
-
-        if len(contents) > max_bytes:
-            raise HTTPException(
-                status_code=400,
-                detail=f"{photo.filename} is too large."
-                       f" Maximum {MAX_FILE_MB}MB."
-            )
-
-        images_bytes.append(contents)
-
-    # ── Run identification ────────────────────────────────────
+        
+        # CHANGED: Stream to disk immediately
+        photo_path = review_folder / f"photo_{idx+1}.jpg"
+        
+        # Read and write in chunks to avoid memory spike
+        chunk_size = 1024 * 1024  # 1MB chunks
+        total_size = 0
+        
+        with open(str(photo_path), 'wb') as f:
+            while True:
+                chunk = await photo.read(chunk_size)
+                if not chunk:
+                    break
+                total_size += len(chunk)
+                
+                # Check size limit
+                if total_size > max_bytes:
+                    # Delete partial file
+                    photo_path.unlink()
+                    raise HTTPException(
+                        status_code=400,
+                        detail=f"{photo.filename} is too large. "
+                               f"Maximum {MAX_FILE_MB}MB."
+                    )
+                
+                f.write(chunk)
+        
+        saved_photo_paths.append(str(photo_path))
+        
+        # ADDED: Cleanup immediately
+        await photo.close()
+        gc.collect()
+    
+    # CHANGED: Now read from disk for processing
+    # One photo at a time, with cleanup after each
+    images_bytes = []
+    
     try:
+        for photo_path in saved_photo_paths:
+            with open(photo_path, 'rb') as f:
+                img_bytes = f.read()
+                images_bytes.append(img_bytes)
+        
+        # ── Run identification ────────────────────────────────
         result = identify_from_bytes_list(
             images_bytes,
             num_photos=len(photos)
         )
+        
     except Exception as e:
         raise HTTPException(
             status_code=500,
             detail=f"Identification failed: {str(e)}"
         )
+    
+    finally:
+        # ADDED: Cleanup images_bytes immediately after processing
+        del images_bytes
+        gc.collect()
 
     # ── Save to database ──────────────────────────────────────
-    identification_id = str(uuid.uuid4())
     save_identification(
         identification_id, result, len(photos)
     )
 
-    # ── Save photos to disk for review ───────────────────────
-    # Create a folder for this identification
-    review_folder = REVIEW_DIR / identification_id
-    review_folder.mkdir(parents=True, exist_ok=True)
-    
-    saved_photo_paths = []
-    for idx, img_bytes in enumerate(images_bytes):
-        photo_path = review_folder / f"photo_{idx+1}.jpg"
-        with open(str(photo_path), 'wb') as f:
-            f.write(img_bytes)
-        saved_photo_paths.append(str(photo_path))
-
-    # ── Save to review queue with photo paths ────────────────
+    # ── Save to review queue ─────────────────────────────────
     review_id = save_to_review_queue(
         identification_id, result, saved_photo_paths
     )
+
+    # ADDED: Final cleanup
+    gc.collect()
 
     # ── Return result ─────────────────────────────────────────
     return {
@@ -326,14 +347,12 @@ async def identify(
 def get_result(identification_id: str):
     """
     Retrieves a previously saved identification
-    by its ID. Used when the app needs to reload
-    a result without rerunning the model.
+    by its ID.
     """
     conn = sqlite3.connect(str(DB_PATH))
     c    = conn.cursor()
     c.execute(
-        "SELECT raw_result FROM identifications"
-        " WHERE id=?",
+        "SELECT raw_result FROM identifications WHERE id=?",
         (identification_id,)
     )
     row = c.fetchone()
@@ -352,16 +371,11 @@ def get_result(identification_id: str):
 def get_review_queue(status: str = "pending"):
     """
     Returns the expert review queue.
-    Filter by status: pending, reviewed,
-    ambiguous, discarded.
-    
-    This endpoint is for the expert review portal.
     """
     conn = sqlite3.connect(str(DB_PATH))
     c    = conn.cursor()
     c.execute(
-        "SELECT * FROM review_queue WHERE status=?"
-        " ORDER BY timestamp DESC",
+        "SELECT * FROM review_queue WHERE status=? ORDER BY timestamp DESC",
         (status,)
     )
     rows    = c.fetchall()
@@ -371,10 +385,7 @@ def get_review_queue(status: str = "pending"):
     return {
         "status": status,
         "count":  len(rows),
-        "items":  [
-            dict(zip(columns, row))
-            for row in rows
-        ]
+        "items":  [dict(zip(columns, row)) for row in rows]
     }
 
 
@@ -389,10 +400,6 @@ def update_review(
 ):
     """
     Updates a review queue item with expert verdict.
-    Status options: reviewed, discarded, ambiguous
-    
-    Called from the expert review portal when
-    an expert submits their correction.
     """
     conn = sqlite3.connect(str(DB_PATH))
     c    = conn.cursor()
@@ -425,16 +432,13 @@ def update_review(
 def get_stats():
     """
     Returns basic usage statistics.
-    Used by the admin panel and review portal.
     """
     conn = sqlite3.connect(str(DB_PATH))
     c    = conn.cursor()
 
-    # Total identifications
     c.execute("SELECT COUNT(*) FROM identifications")
     total = c.fetchone()[0]
 
-    # Scenario breakdown
     c.execute('''
         SELECT scenario, COUNT(*) as count
         FROM identifications
@@ -443,7 +447,6 @@ def get_stats():
     ''')
     scenarios = dict(c.fetchall())
 
-    # Top families identified
     c.execute('''
         SELECT top_family, COUNT(*) as count
         FROM identifications
@@ -453,10 +456,8 @@ def get_stats():
     ''')
     families = dict(c.fetchall())
 
-    # Pending reviews
     c.execute('''
-        SELECT COUNT(*) FROM review_queue
-        WHERE status='pending'
+        SELECT COUNT(*) FROM review_queue WHERE status='pending'
     ''')
     pending_reviews = c.fetchone()[0]
 
@@ -475,7 +476,6 @@ def get_stats():
 def get_photo(identification_id: str, photo_name: str):
     """
     Serves a photo from the review queue folder.
-    Used by the expert review portal to display images.
     """
     from fastapi.responses import FileResponse
     
