@@ -20,12 +20,8 @@ import numpy as np
 from pathlib import Path
 from PIL import Image
 
-# CHANGED: Use tflite_runtime instead of tensorflow
-try:
-    import tflite_runtime.interpreter as tflite
-except ImportError:
-    # Fallback for local development
-    import tensorflow.lite as tflite
+# CHANGED: Use tensorflow.lite (more compatible than tflite_runtime)
+import tensorflow.lite as tflite
 
 from config import (
     MODEL_PATH_TFLITE, CLASS_INFO, IMAGE_SIZE,
