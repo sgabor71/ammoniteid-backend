@@ -7,22 +7,20 @@
 # - Process from disk instead of memory
 # - Aggressive cleanup after each request
 # - Reduced MAX_FILE_MB from 10 to 5 (safer for 500MB limit)
-# ============================================================
-# Run with: py -3.11 -m uvicorn main:app --reload
-# Then open: http://localhost:8000/docs
-# Review portal: http://localhost:8000/static/review.html
-# Test page: http://localhost:8000/static/test.html
+# - Added expert correction export endpoints
 # ============================================================
 
 import os
 import gc  # ADDED: For memory cleanup
+import io
+import csv
 
 from fastapi import (
     FastAPI, File, UploadFile, HTTPException
 )
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, FileResponse
 from typing import List
 import uuid
 import json
@@ -477,14 +475,20 @@ def get_photo(identification_id: str, photo_name: str):
     """
     Serves a photo from the review queue folder.
     """
-    from fastapi.responses import FileResponse
-    
     photo_path = REVIEW_DIR / identification_id / photo_name
     
     if not photo_path.exists():
         raise HTTPException(
             status_code=404,
             detail="Photo not found."
+        )
+    
+    return FileResponse(str(photo_path))
+
+
+# ============================================================
+# EXPERT CORRECTION ENDPOINTS
+# ============================================================
 
 @app.get("/export-corrections")
 def export_corrections(
@@ -582,9 +586,6 @@ def export_corrections(
     # Return in requested format
     if format == "csv":
         # Convert to CSV format
-        import io
-        import csv
-        
         output = io.StringIO()
         if corrections:
             fieldnames = corrections[0].keys()
@@ -721,7 +722,3 @@ def get_correction_stats():
         
         "model_version": MODEL_VERSION
     }
-
-        )
-    
-    return FileResponse(str(photo_path))
