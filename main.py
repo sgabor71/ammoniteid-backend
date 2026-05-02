@@ -485,6 +485,243 @@ def get_photo(identification_id: str, photo_name: str):
         raise HTTPException(
             status_code=404,
             detail="Photo not found."
+
+@app.get("/export-corrections")
+def export_corrections(
+    status: str = "reviewed",
+    format: str = "json"
+):
+    """
+    Export expert corrections from the review queue.
+    
+    Parameters:
+    - status: Filter by status (default: 'reviewed')
+              Options: 'reviewed', 'all'
+    - format: Output format (default: 'json')
+              Options: 'json', 'csv'
+    
+    Returns:
+    List of corrections with:
+    - photo_paths: Paths to the photos
+    - ai_prediction: What AI predicted (family/genus)
+    - expert_correction: What expert said is correct
+    - timestamp: When reviewed
+    - notes: Expert's notes
+    
+    Example:
+    GET /export-corrections
+    GET /export-corrections?status=all
+    GET /export-corrections?format=csv
+    """
+    
+    conn = sqlite3.connect(str(DB_PATH))
+    c = conn.cursor()
+    
+    # Build query based on status filter
+    if status == "all":
+        query = "SELECT * FROM review_queue"
+        c.execute(query)
+    else:
+        query = "SELECT * FROM review_queue WHERE status=?"
+        c.execute(query, (status,))
+    
+    rows = c.fetchall()
+    columns = [d[0] for d in c.description]
+    conn.close()
+    
+    # Convert to list of dicts
+    corrections = []
+    for row in rows:
+        item = dict(zip(columns, row))
+        
+        # Only include items where expert provided corrections
+        if item.get('expert_family') or item.get('expert_genus'):
+            
+            # Parse photo paths from JSON
+            photo_paths_json = item.get('photo_paths')
+            if photo_paths_json:
+                try:
+                    photo_paths = json.loads(photo_paths_json)
+                except:
+                    photo_paths = []
+            else:
+                photo_paths = []
+            
+            correction = {
+                'id': item['id'],
+                'timestamp': item['timestamp'],
+                'reviewed_at': item.get('reviewed_at'),
+                'reviewed_by': item.get('reviewed_by'),
+                
+                # AI's prediction
+                'ai_family': item.get('ai_family'),
+                'ai_genus': item.get('ai_genus'),
+                'ai_confidence': item.get('ai_confidence'),
+                
+                # Expert's correction
+                'expert_family': item.get('expert_family'),
+                'expert_genus': item.get('expert_genus'),
+                'expert_notes': item.get('expert_notes'),
+                
+                # Photo information
+                'photo_paths': photo_paths,
+                'num_photos': len(photo_paths),
+                
+                # Was it correct or incorrect?
+                'was_correct': (
+                    item.get('ai_family') == item.get('expert_family') and
+                    item.get('ai_genus') == item.get('expert_genus')
+                ),
+                
+                # Identification ID (to get original photos if needed)
+                'identification_id': item.get('identification_id')
+            }
+            
+            corrections.append(correction)
+    
+    # Return in requested format
+    if format == "csv":
+        # Convert to CSV format
+        import io
+        import csv
+        
+        output = io.StringIO()
+        if corrections:
+            fieldnames = corrections[0].keys()
+            writer = csv.DictWriter(output, fieldnames=fieldnames)
+            writer.writeheader()
+            
+            for correction in corrections:
+                # Flatten photo_paths for CSV
+                row = correction.copy()
+                row['photo_paths'] = ';'.join(correction['photo_paths'])
+                writer.writerow(row)
+        
+        csv_content = output.getvalue()
+        
+        return JSONResponse(
+            content={"csv": csv_content},
+            headers={
+                "Content-Disposition": "attachment; filename=corrections.csv"
+            }
+        )
+    
+    else:  # JSON format (default)
+        return {
+            "status": status,
+            "count": len(corrections),
+            "corrections": corrections,
+            "model_version": MODEL_VERSION,
+            "exported_at": datetime.utcnow().isoformat()
+        }
+
+
+@app.get("/correction-stats")
+def get_correction_stats():
+    """
+    Get statistics about expert corrections.
+    
+    Shows:
+    - How many corrections total
+    - Accuracy by family/genus
+    - Common mistakes the AI makes
+    
+    Example:
+    GET /correction-stats
+    """
+    
+    conn = sqlite3.connect(str(DB_PATH))
+    c = conn.cursor()
+    
+    # Get all reviewed items with expert corrections
+    c.execute("""
+        SELECT 
+            ai_family, ai_genus, ai_confidence,
+            expert_family, expert_genus,
+            status
+        FROM review_queue
+        WHERE status = 'reviewed'
+        AND expert_family IS NOT NULL
+    """)
+    
+    rows = c.fetchall()
+    conn.close()
+    
+    total = len(rows)
+    if total == 0:
+        return {
+            "total_corrections": 0,
+            "message": "No expert corrections yet"
+        }
+    
+    # Calculate statistics
+    correct_family = 0
+    correct_genus = 0
+    
+    family_mistakes = {}
+    genus_mistakes = {}
+    
+    for row in rows:
+        ai_fam, ai_gen, ai_conf, exp_fam, exp_gen, status = row
+        
+        # Count correct predictions
+        if ai_fam == exp_fam:
+            correct_family += 1
+            
+            if ai_gen == exp_gen:
+                correct_genus += 1
+        
+        # Track mistakes
+        if ai_fam != exp_fam:
+            mistake_key = f"{ai_fam} → {exp_fam}"
+            family_mistakes[mistake_key] = family_mistakes.get(mistake_key, 0) + 1
+        
+        if ai_gen != exp_gen:
+            mistake_key = f"{ai_gen} → {exp_gen}"
+            genus_mistakes[mistake_key] = genus_mistakes.get(mistake_key, 0) + 1
+    
+    # Sort mistakes by frequency
+    top_family_mistakes = sorted(
+        family_mistakes.items(),
+        key=lambda x: x[1],
+        reverse=True
+    )[:5]
+    
+    top_genus_mistakes = sorted(
+        genus_mistakes.items(),
+        key=lambda x: x[1],
+        reverse=True
+    )[:5]
+    
+    return {
+        "total_corrections": total,
+        
+        "accuracy": {
+            "family": {
+                "correct": correct_family,
+                "incorrect": total - correct_family,
+                "percentage": round(correct_family / total * 100, 1)
+            },
+            "genus": {
+                "correct": correct_genus,
+                "incorrect": total - correct_genus,
+                "percentage": round(correct_genus / total * 100, 1)
+            }
+        },
+        
+        "top_family_mistakes": [
+            {"mistake": m[0], "count": m[1]}
+            for m in top_family_mistakes
+        ],
+        
+        "top_genus_mistakes": [
+            {"mistake": m[0], "count": m[1]}
+            for m in top_genus_mistakes
+        ],
+        
+        "model_version": MODEL_VERSION
+    }
+
         )
     
     return FileResponse(str(photo_path))
