@@ -1,7 +1,7 @@
 {
   "model_version": "v1",
   "val_accuracy": 0.709,
-  "num_classes": 16,
+  "num_classes": 17,
   "image_size": 224,
   "class_indices": {
     "Amaltheus": 0,
@@ -11,15 +11,16 @@
     "Bivalve": 4,
     "Catacoeloceras": 5,
     "Dactylioceras": 6,
-    "Devils toenail": 7,
-    "Eleganticeras": 8,
-    "Gagaticeras": 9,
-    "Grammoceras": 10,
-    "Harpoceras": 11,
-    "Hildoceras": 12,
-    "Not_Ammonite": 13,
-    "Peronoceras": 14,
-    "Pseudolioceras": 15
+    "Dactylioceras Tenuicostatum": 7,
+    "Devils toenail": 8,
+    "Eleganticeras": 9,
+    "Gagaticeras": 10,
+    "Grammoceras": 11,
+    "Harpoceras": 12,
+    "Hildoceras": 13,
+    "NOT A FOSSIL": 14,
+    "Peronoceras": 15,
+    "Pseudolioceras": 16
   },
   "index_to_class": {
     "0": "Amaltheus",
@@ -29,22 +30,24 @@
     "4": "Bivalve",
     "5": "Catacoeloceras",
     "6": "Dactylioceras",
-    "7": "Devils toenail",
-    "8": "Eleganticeras",
-    "9": "Gagaticeras",
-    "10": "Grammoceras",
-    "11": "Harpoceras",
-    "12": "Hildoceras",
-    "13": "Not_Ammonite",
-    "14": "Peronoceras",
-    "15": "Pseudolioceras"
+    "7": "Dactylioceras Tenuicostatum",
+    "8": "Devils toenail",
+    "9": "Eleganticeras",
+    "10": "Gagaticeras",
+    "11": "Grammoceras",
+    "12": "Harpoceras",
+    "13": "Hildoceras",
+    "14": "NOT A FOSSIL",
+    "15": "Peronoceras",
+    "16": "Pseudolioceras"
   },
   "genus_to_family": {
     "Amaltheus": "Amaltheidae",
     "Androgynoceras": "Androgynoceratidae",
-    "Arnioceras": "Schiloceratidae",
+    "Arnioceras": "Arietitidae",
     "Catacoeloceras": "Dactylioceratidae",
     "Dactylioceras": "Dactylioceratidae",
+    "Dactylioceras tenuicostatum": "Dactylioceratidae",
     "Eleganticeras": "Eleganticeratidae",
     "Gagaticeras": "Dactylioceratidae",
     "Grammoceras": "Hildoceratidae",
@@ -60,12 +63,13 @@
     "Androgynoceratidae": [
       "Androgynoceras"
     ],
-    "Schiloceratidae": [
+    "Arietitidae": [
       "Arnioceras"
     ],
     "Dactylioceratidae": [
       "Catacoeloceras",
       "Dactylioceras",
+      "Dactylioceras tenuicostatum",
       "Gagaticeras",
       "Peronoceras"
     ],
@@ -80,13 +84,13 @@
     ]
   },
   "non_ammonite_map": {
-    "Not_Ammonite": "Not_Fossil",
+    "NOT A FOSSIL": "Not_Fossil",
     "Belemnite Fossil": "Other_Fossil",
     "Bivalve": "Other_Fossil",
     "Devils toenail": "Other_Fossil"
   },
   "non_ammonite_folders": [
-    "Not_Ammonite",
+    "NOT A FOSSIL",
     "Belemnite Fossil",
     "Bivalve",
     "Devils toenail"
@@ -101,7 +105,7 @@
     "ammonite_families": [
       "Amaltheidae",
       "Androgynoceratidae",
-      "Schiloceratidae",
+      "Arietitidae",
       "Dactylioceratidae",
       "Eleganticeratidae",
       "Hildoceratidae"
